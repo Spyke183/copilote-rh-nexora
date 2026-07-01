@@ -46,8 +46,13 @@ export async function POST(req: Request) {
       controller.enqueue(encoder.encode(meta + "\n"));
       try {
         if (mode === "gemini") {
-          for await (const piece of streamAnswer(message, sources, toolNote)) {
-            controller.enqueue(encoder.encode(piece));
+          try {
+            for await (const piece of streamAnswer(message, sources, toolNote)) {
+              controller.enqueue(encoder.encode(piece));
+            }
+          } catch {
+            // Si la génération IA échoue, on renvoie une réponse sourcée de repli.
+            controller.enqueue(encoder.encode(fallbackAnswer(message, sources, toolNote, tool)));
           }
         } else {
           controller.enqueue(encoder.encode(fallbackAnswer(message, sources, toolNote, tool)));

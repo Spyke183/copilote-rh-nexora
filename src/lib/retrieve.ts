@@ -38,7 +38,8 @@ export async function retrieve(query: string, k = 4): Promise<Source[]> {
   const scored: { chunk: Chunk; score: number }[] = [];
 
   if (hasEmbeddings() && process.env.GEMINI_API_KEY) {
-    const queryEmbedding = await embedText(query);
+    // On embarque la requête avec le MÊME modèle que celui de l'index.
+    const queryEmbedding = await embedText(query, index.model || undefined);
     for (const chunk of index.chunks) {
       if (!chunk.embedding) continue;
       scored.push({ chunk, score: cosineSimilarity(queryEmbedding, chunk.embedding) });

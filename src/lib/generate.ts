@@ -1,7 +1,8 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { Source } from "./types";
 
-const MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+const DEFAULT_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+const FALLBACK_MODELS = ["gemini-2.0-flash"];
 
 export const SYSTEM_PROMPT = `Tu es le copilote RH interne de l'entreprise Nexora.
 Tu réponds aux questions des salariés UNIQUEMENT à partir des extraits de documents internes fournis.
@@ -31,7 +32,10 @@ export function buildUserPrompt(query: string, sources: Source[], toolNote?: str
     .join("\n\n");
 }
 
-/** Génère la réponse en flux (streaming) via Gemini. */
+/**
+ * Génère la réponse en flux (streaming) via Gemini.
+ * Essaie plusieurs modèles pour résister à un nom de modèle retiré ou indisponible.
+ */
 export async function* streamAnswer(
   query: string,
   sources: Source[],
@@ -41,13 +45,30 @@ export async function* streamAnswer(
   if (!key) throw new Error("GEMINI_API_KEY manquante");
 
   const genAI = new GoogleGenerativeAI(key);
-  const model = genAI.getGenerativeModel({ model: MODEL, systemInstruction: SYSTEM_PROMPT });
-  const result = await model.generateContentStream(buildUserPrompt(query, sources, toolNote));
+  const prompt = buildUserPrompt(query, sources, toolNote);
+  const models = [...new Set([DEFAULT_MODEL, ...FALLBACK_MODELS])];
 
-  for await (const chunk of result.stream) {
-    const text = chunk.text();
-    if (text) yield text;
+  let yielded = false;
+  let lastError: unknown;
+  for (const name of models) {
+    try {
+      const model = genAI.getGenerativeModel({ model: name, systemInstruction: SYSTEM_PROMPT });
+      const result = await model.generateContentStream(prompt);
+      for await (const chunk of result.stream) {
+        const text = chunk.text();
+        if (text) {
+          yielded = true;
+          yield text;
+        }
+      }
+      return;
+    } catch (err) {
+      lastError = err;
+      // Si on a déjà commencé à répondre, on ne relance pas (pas de doublon).
+      if (yielded) throw err;
+    }
   }
+  throw lastError;
 }
 
 export type ToolResult =

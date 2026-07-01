@@ -17,7 +17,7 @@ loadEnvLocal();
 const ROOT = process.cwd();
 const DOCS_DIR = join(ROOT, "src", "data", "documents");
 const OUT = join(ROOT, "src", "data", "index.json");
-const EMBED_MODEL = process.env.GEMINI_EMBED_MODEL || "text-embedding-004";
+const EMBED_MODEL = process.env.GEMINI_EMBED_MODEL || "gemini-embedding-001";
 const KEY = process.env.GEMINI_API_KEY;
 
 const MANIFEST: Record<string, DocMeta> = {
@@ -55,16 +55,40 @@ async function main() {
     return;
   }
 
-  const model = new GoogleGenerativeAI(KEY).getGenerativeModel({ model: EMBED_MODEL });
-  console.log(`Calcul des embeddings via ${EMBED_MODEL}…`);
-  for (let i = 0; i < chunks.length; i++) {
-    const res = await model.embedContent(chunks[i].text);
-    chunks[i].embedding = res.embedding.values;
-    process.stdout.write(`\r  ${i + 1}/${chunks.length} passages`);
+  // On tente plusieurs modèles : un nom retiré (ex. text-embedding-004) ne doit
+  // jamais faire échouer le build — au pire l'index reste en mode mots-clés.
+  const candidates = [...new Set([EMBED_MODEL, "gemini-embedding-001", "text-embedding-004"])];
+  const genAI = new GoogleGenerativeAI(KEY);
+  let usedModel: string | null = null;
+
+  for (const name of candidates) {
+    try {
+      const model = genAI.getGenerativeModel({ model: name });
+      console.log(`Calcul des embeddings via ${name}…`);
+      for (let i = 0; i < chunks.length; i++) {
+        const res = await model.embedContent(chunks[i].text);
+        chunks[i].embedding = res.embedding.values;
+        process.stdout.write(`\r  ${i + 1}/${chunks.length} passages`);
+      }
+      process.stdout.write("\n");
+      usedModel = name;
+      break;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message.slice(0, 140) : String(err);
+      console.warn(`\nModèle d'embedding « ${name} » indisponible (${msg}). Essai suivant…`);
+      for (const c of chunks) delete c.embedding;
+    }
   }
-  process.stdout.write("\n");
-  write({ model: EMBED_MODEL, createdAt: new Date().toISOString(), chunks });
-  console.log("Index écrit AVEC embeddings (recherche sémantique active).");
+
+  if (usedModel) {
+    write({ model: usedModel, createdAt: new Date().toISOString(), chunks });
+    console.log(`Index écrit AVEC embeddings via ${usedModel} (recherche sémantique active).`);
+  } else {
+    write({ model: null, createdAt: new Date().toISOString(), chunks });
+    console.warn(
+      "Aucun modèle d'embedding disponible : index écrit en mode mots-clés. La génération IA reste active au runtime.",
+    );
+  }
 }
 
 function write(index: SearchIndex) {

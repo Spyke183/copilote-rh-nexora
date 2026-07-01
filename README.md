@@ -52,8 +52,8 @@ devient sémantique et les réponses sont rédigées par Gemini.
 | Variable | Rôle | Défaut |
 |---|---|---|
 | `GEMINI_API_KEY` | Clé API Google Gemini | — (mode démo si absente) |
-| `GEMINI_MODEL` | Modèle de génération | `gemini-2.0-flash` |
-| `GEMINI_EMBED_MODEL` | Modèle d'embeddings | `text-embedding-004` |
+| `GEMINI_MODEL` | Modèle de génération | `gemini-2.5-flash` |
+| `GEMINI_EMBED_MODEL` | Modèle d'embeddings | `gemini-embedding-001` |
 
 ## Structure
 
