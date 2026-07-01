@@ -107,9 +107,12 @@ export function fallbackAnswer(
     );
   }
 
+  const hasKey = Boolean(process.env.GEMINI_API_KEY);
   lines.push(
     "",
-    "— Mode démonstration (sans clé API) : cette réponse s'appuie sur la recherche par mots-clés. Ajoutez une clé Gemini pour des réponses entièrement rédigées.",
+    hasKey
+      ? "— L'assistant est momentanément très sollicité ; voici une réponse à partir des documents. N'hésitez pas à reformuler dans un instant."
+      : "— Mode démonstration (sans clé API) : réponse basée sur la recherche par mots-clés. Ajoutez une clé Gemini pour des réponses entièrement rédigées.",
   );
   return lines.join("\n");
 }
