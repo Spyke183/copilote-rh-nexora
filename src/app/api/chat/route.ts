@@ -1,11 +1,6 @@
 import { retrieve, retrievalMode } from "@/lib/retrieve";
 import { streamAnswer, fallbackAnswer, type ToolResult } from "@/lib/generate";
-import {
-  DEMO_EMPLOYEE,
-  detectLeaveIntent,
-  draftLeaveRequest,
-  leaveBalance,
-} from "@/lib/leave";
+import { detectLeaveIntent, draftLeaveRequest, leaveBalance } from "@/lib/leave";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,7 +23,7 @@ export async function POST(req: Request) {
   let tool: ToolResult = null;
   if (intent === "balance") {
     const b = leaveBalance();
-    toolNote = `${DEMO_EMPLOYEE.name} dispose de ${b.cpRestants} jours de congés payés (sur ${b.cpAcquis} acquis, ${b.cpPris} déjà posés) et de ${b.rttRestants} RTT restants.`;
+    toolNote = `Solde actuel du salarié connecté : ${b.cpRestants} jours de congés payés restants (sur ${b.cpAcquis} acquis, ${b.cpPris} déjà posés) et ${b.rttRestants} RTT restants.`;
     tool = { type: "balance", cpRestants: b.cpRestants, cpAcquis: b.cpAcquis, cpPris: b.cpPris, rttRestants: b.rttRestants };
   } else if (intent === "draft") {
     const draft = draftLeaveRequest();

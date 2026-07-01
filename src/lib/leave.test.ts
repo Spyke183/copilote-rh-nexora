@@ -39,6 +39,14 @@ describe("detectLeaveIntent", () => {
   it("retourne null hors du sujet congés", () => {
     expect(detectLeaveIntent("Quelles sont les règles du télétravail ?")).toBeNull();
   });
+
+  it("ne se déclenche pas sur 'combien de jours de télétravail'", () => {
+    expect(detectLeaveIntent("Combien de jours de télétravail par semaine ?")).toBeNull();
+  });
+
+  it("détecte le solde de RTT", () => {
+    expect(detectLeaveIntent("Combien de RTT me reste-t-il ?")).toBe("balance");
+  });
 });
 
 describe("draftLeaveRequest", () => {

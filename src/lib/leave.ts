@@ -70,9 +70,11 @@ export function draftLeaveRequest(opts: {
 /** Détecte si la question concerne le solde de congés ou une demande à rédiger. */
 export function detectLeaveIntent(query: string): "balance" | "draft" | null {
   const q = query.toLowerCase();
-  const draft = /(brouillon|redige|rédige|modele|modèle|ecris|écris|prepare|prépare).*(cong|rtt|absence|demande)|(demande|poser).*(cong|rtt)/;
-  const balance = /(solde|combien|reste|restant).*(cong|rtt|jour)|jours?\s+(de\s+)?(cong|rtt)/;
-  if (draft.test(q)) return "draft";
-  if (balance.test(q)) return "balance";
+  // Les outils "congés" ne s'activent que si la question parle bien de congés ou de RTT.
+  if (!/(cong[eé]|\brtt\b)/.test(q)) return null;
+  if (/(brouillon|r[eé]dige|mod[eè]le|[eé]cris|pr[eé]pare|g[eé]n[eé]re|\bposer\b|\bpose\b)/.test(q)) {
+    return "draft";
+  }
+  if (/(solde|combien|reste|restant|dispo)/.test(q)) return "balance";
   return null;
 }
