@@ -1,4 +1,4 @@
-import { retrieve } from "@/lib/retrieve";
+import { retrieve, retrievalMode } from "@/lib/retrieve";
 import { streamAnswer, fallbackAnswer, type ToolResult } from "@/lib/generate";
 import {
   DEMO_EMPLOYEE,
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
   }
 
   const mode: "gemini" | "demo" = process.env.GEMINI_API_KEY ? "gemini" : "demo";
-  const meta = JSON.stringify({ sources, mode, tool });
+  const meta = JSON.stringify({ sources, mode, tool, retrieval: retrievalMode() });
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({

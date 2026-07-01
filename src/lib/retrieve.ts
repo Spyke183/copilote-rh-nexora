@@ -14,6 +14,11 @@ export function hasEmbeddings(): boolean {
   );
 }
 
+/** Mode de recherche effectivement utilisé au runtime. */
+export function retrievalMode(): "semantic" | "keyword" {
+  return hasEmbeddings() && process.env.GEMINI_API_KEY ? "semantic" : "keyword";
+}
+
 const PREVIEW_LENGTH = 260;
 
 function toSource(chunk: Chunk, score: number): Source {
@@ -46,7 +51,9 @@ export async function retrieve(query: string, k = 4): Promise<Source[]> {
     }
   } else {
     for (const chunk of index.chunks) {
-      scored.push({ chunk, score: keywordScore(query, `${chunk.section}. ${chunk.text}`) });
+      // Le titre de section est un signal fort : on le pondère davantage.
+      const score = keywordScore(query, chunk.text) + 1.5 * keywordScore(query, chunk.section);
+      scored.push({ chunk, score });
     }
   }
 

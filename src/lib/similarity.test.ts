@@ -30,6 +30,10 @@ describe("keywordScore", () => {
   });
 
   it("retourne 0 en l'absence de terme commun", () => {
-    expect(keywordScore("congés", "télétravail hebdomadaire")).toBe(0);
+    expect(keywordScore("congés", "avantages hebdomadaires")).toBe(0);
+  });
+
+  it("reconnaît les variantes par préfixe (télétravail ~ télétravailler)", () => {
+    expect(keywordScore("télétravail", "Le salarié peut télétravailler trois jours.")).toBeGreaterThan(0);
   });
 });

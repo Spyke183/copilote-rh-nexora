@@ -46,11 +46,28 @@ export function keywordScore(query: string, text: string): number {
 
   const counts = new Map<string, number>();
   for (const token of docTokens) counts.set(token, (counts.get(token) ?? 0) + 1);
+  const uniqueDocTokens = [...counts.keys()];
 
   let score = 0;
   for (const term of queryTerms) {
-    const c = counts.get(term) ?? 0;
-    if (c > 0) score += 1 + Math.log(c);
+    const exact = counts.get(term) ?? 0;
+    if (exact > 0) {
+      score += 1 + Math.log(exact);
+      continue;
+    }
+    // Correspondance par préfixe : "télétravail" ~ "télétravailler", "congé" ~ "congés".
+    let partial = 0;
+    for (const docToken of uniqueDocTokens) {
+      if (
+        term.length >= 5 &&
+        docToken.length >= 5 &&
+        (docToken.startsWith(term) || term.startsWith(docToken))
+      ) {
+        partial = 0.7;
+        break;
+      }
+    }
+    score += partial;
   }
   return score / Math.sqrt(docTokens.length);
 }
